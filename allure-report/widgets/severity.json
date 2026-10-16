@@ -1,0 +1,1 @@
+[{"uid":"474afc59c9f32c3e","name":"outside suite @smoke","time":{"start":1792183957373,"stop":1792183957382,"duration":9},"status":"passed","severity":"normal"},{"uid":"c92436ffd805e087","name":"outside suite2 @smoke","time":{"start":1792183957548,"stop":1792183957552,"duration":4},"status":"passed","severity":"normal"}]

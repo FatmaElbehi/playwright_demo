@@ -1,0 +1,10 @@
+If you work with files in your automation test you change download folder. In this case it's Resources folder
+But when we work with Git it can't save empty folders.
+So that's why you need to do some actions if you have test with downolad/upload files.
+1) Create Resources folder in your solution (in this repository it is already created, so you can see how it should be done)
+2) Add some example .txt file inside of this folder
+3) In your Visual Studio Solution explorer right click on created .txt file
+4) "Properties" -> "Copy to output directory" value should be changed to "Copy always"
+
+After these actions your code will work on your local computer and on another computers (for example when mentor reviews your code).
+Don't forget to do these actions when you work on final task code
