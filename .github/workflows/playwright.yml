@@ -22,6 +22,11 @@ jobs:
       run: npx playwright install chromium --with-deps
     - name: Run Playwright tests
       run: npm run test
+    - name: Run Snyk to check for vulnerabilities
+      uses: snyk/actions/node@master
+      continue-on-error: true # To make sure that SARIF upload gets called
+      env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
     - name: Upload Allure Report
       uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
