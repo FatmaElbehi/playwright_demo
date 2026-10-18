@@ -3,23 +3,23 @@ on:
   schedule:
     - cron: '0 12 * * *'
   push:
-    branches: 
-    - 'main'
+    branches:
+      - 'main'
   pull_request:
     branches: [ main ]
   workflow_dispatch:
     inputs:
       test-to-run:
-        description: "Add you npx code here"
+        description: "Add your npm command here"
         required: false
-        default: 'npm run script:to:run'
+        default: 'npm run test'
         type: string
       workers:
         description: "Number of workers to use"
         required: false
         default: '1'
         type: choice
-        option:
+        options:
           - '1'
           - '2'
           - '3'
@@ -29,40 +29,49 @@ on:
         required: false
         default: 'chromium'
         type: choice
-        option:
+        options:
           - 'chromium'
           - 'firefox'
           - 'webkit'
           - 'all'
-        
+
 jobs:
   Playwright-tests:
     timeout-minutes: 60
     runs-on: ubuntu-latest
+    env:
+      TEST_TO_RUN: ${{ github.event.inputs.test-to-run || 'npm run test' }}
+      WORKERS: ${{ github.event.inputs.workers || '1' }}
+      BROWSERS: ${{ github.event.inputs.browsers || 'chromium' }}
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: lts/*
-    - name: Install dependencies
-      run: npm ci
-    - name: Install Playwright Browsers
-      run: npx playwright install chromium --with-deps
-    - name: Run Playwright tests
-      env:
-        test-to-run: ${{github.event.inputs.test-to-run || 'npm run script:to:run'}}
-        workers: ${{github.event.inputs.workers || '1'}}
-        browsers: ${{github.event.inputs.browsers || 'chromium'}}
-      
-      run: |
-        ${{env.test-to-run}} -- --workers=${{env.workers}} -- project=${{env.browsers}} || npm run posttest
-
-    - name: Upload Allure Report
-      uses: actions/upload-artifact@v4
-      if: ${{ !cancelled() }}
-      with:
-        path: allure-report/
-        retention-days: 30
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright Browsers
+        run: |
+          if [ "$BROWSERS" = "all" ]; then
+            npx playwright install --with-deps
+          else
+            npx playwright install "$BROWSERS" --with-deps
+          fi
+      - name: Run Playwright tests
+        run: |
+          if [ "$BROWSERS" = "all" ]; then
+            PROJECT_ARG=""
+          else
+            PROJECT_ARG="--project=$BROWSERS"
+          fi
+          $TEST_TO_RUN -- --workers=$WORKERS $PROJECT_ARG || npm run posttest
+      - name: Upload Allure Report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: allure-report
+          path: allure-report/
+          retention-days: 30
 
   run-snyk-scan:
     name: Run Snyk to check for vulnerabilities
@@ -70,16 +79,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+      - name: Install dependencies
+        run: npm ci
       - name: Run Snyk scan
         uses: snyk/actions/node@master
         continue-on-error: true # To make sure that SARIF upload gets called
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-    
+
   run-zap-scan:
-      name: ZAP Scan
-      needs: Playwright-tests
-      uses: zaproxy/action-full-scan@v0.13.0
-      with:
-        target: 'https://the-internet.herokuapp.com/'
-        
+    name: ZAP Scan
+    needs: Playwright-tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Run ZAP full scan
+        uses: zaproxy/action-full-scan@v0.13.0
+        with:
+          target: 'https://the-internet.herokuapp.com/'
