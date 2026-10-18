@@ -53,21 +53,27 @@ jobs:
         test-to-run: ${{github.event.inputs.test-to-run || 'npm run script:to:run'}}
         workers: ${{github.event.inputs.workers || '1'}}
         browsers: ${{github.event.inputs.browsers || 'chromium'}}
+      
       run: |
         ${{env.test-to-run}} -- --workers=${{env.workers}} -- project=${{env.browsers}} || npm run posttest
 
     - name: Run Snyk to check for vulnerabilities
+      needs: run-playwright-test
       uses: snyk/actions/node@master
       continue-on-error: true # To make sure that SARIF upload gets called
       env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
     - name: Upload Allure Report
+      needs: run-playwright-test
       uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:
         path: allure-report/
         retention-days: 30
+
     - name: ZAP Scan
+      needs: run-playwright-test
       uses: zaproxy/action-full-scan@v0.13.0
       with:
         target: 'https://the-internet.herokuapp.com/'
