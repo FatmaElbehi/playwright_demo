@@ -67,6 +67,7 @@ jobs:
   run-snyk-scan:
     name: Run Snyk to check for vulnerabilities
     needs: Playwright-tests
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Run Snyk scan
