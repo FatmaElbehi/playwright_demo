@@ -64,14 +64,16 @@ jobs:
         path: allure-report/
         retention-days: 30
 
-  run-synk-scan:
-      name: Run Snyk to check for vulnerabilities
-      needs: Playwright-tests
-      uses: snyk/actions/node@master
-      continue-on-error: true # To make sure that SARIF upload gets called
-      env:
+  run-snyk-scan:
+    name: Run Snyk to check for vulnerabilities
+    needs: Playwright-tests
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Snyk scan
+        uses: snyk/actions/node@master
+        continue-on-error: true # To make sure that SARIF upload gets called
+        env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
     
   run-zap-scan:
       name: ZAP Scan
