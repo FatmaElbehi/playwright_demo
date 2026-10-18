@@ -4,9 +4,37 @@ on:
     - cron: '0 12 * * *'
   push:
     branches: 
-    - '**'
+    - 'main'
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      test-to-run:
+        description: "Add you npx code here"
+        required: false
+        default: 'npm run script:to:run'
+        type: string
+      workers:
+        description: "Number of workers to use"
+        required: false
+        default: '1'
+        type: choice
+        option:
+          - '1'
+          - '2'
+          - '3'
+          - '4'
+      browsers:
+        description: "Browsers to run tests on"
+        required: false
+        default: 'chromium'
+        type: choice
+        option:
+          - 'chromium'
+          - 'firefox'
+          - 'webkit'
+          - 'all'
+        
 jobs:
   Playwright-tests:
     timeout-minutes: 60
@@ -21,7 +49,13 @@ jobs:
     - name: Install Playwright Browsers
       run: npx playwright install chromium --with-deps
     - name: Run Playwright tests
-      run: npm run test
+      env:
+        test-to-run: ${{github.event.inputs.test-to-run || 'npm run script:to:run'}}
+        workers: ${{github.event.inputs.workers || '1'}}
+        browsers: ${{github.event.inputs.browsers || 'chromium'}}
+      run: |
+        ${{env.test-to-run}} -- --workers=${{env.workers}} -- project=${{env.browsers}} || npm run posttest
+
     - name: Run Snyk to check for vulnerabilities
       uses: snyk/actions/node@master
       continue-on-error: true # To make sure that SARIF upload gets called
